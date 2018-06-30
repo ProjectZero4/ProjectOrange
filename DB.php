@@ -32,7 +32,7 @@ class DB
      * @param string $driver
      * @param string $password
      */
-    public function __construct($database, $user = 'user_data_user', $host = 'localhost', $driver = 'mysql', $password = 'KxWAkz2t3vA88iCX')
+    public function __construct($database = 'database', $user = 'db_user', $host = 'localhost', $driver = 'mysql', $password = 'password')
     {
         $this->dsn = "{$driver}:dbname={$database};host={$host}";
         $this->user = $user;
