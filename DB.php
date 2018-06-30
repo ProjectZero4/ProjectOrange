@@ -9,6 +9,7 @@
 namespace ProjectOrange;
 
 use PDO;
+use PDOStatement;
 
 class DB
 {
@@ -17,6 +18,11 @@ class DB
      * @var string
      */
     private $dsn, $user, $pass, $pdo;
+
+    /**
+     * @var PDOStatement
+     */
+    private $pdo_stmt;
 
     /**
      * DB constructor.
@@ -62,11 +68,11 @@ class DB
         // PDO statement
         $stmt = "select {$col_stmt} from {$table} {$where_stmt};";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        $pdo_stmt->execute($where);
+        $this->pdo_stmt->execute($where);
 
-        $result = $pdo_stmt->fetchAll();
+        $result = $this->pdo_stmt->fetchAll();
 
         return $result;
     }
@@ -92,9 +98,9 @@ class DB
 
         $stmt = "insert into {$table} ({$keys}) values ($values)";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        return $pdo_stmt->execute($columns_assoc);
+        return $this->pdo_stmt->execute($columns_assoc);
     }
 
     /**
@@ -112,11 +118,6 @@ class DB
 
         foreach($columns_assoc as $k => $v)
         {
-            if(isset($where[$k]))
-            {
-                throw new \BadMethodCallException('You cannot use ProjectOrange\DB::update to mass update the table!');
-            }
-
             $col_arr[] = "{$k}=:{$k}";
         }
 
@@ -134,9 +135,9 @@ class DB
 
         $stmt = "update {$table} set {$col_stmt} {$where_stmt}";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        return $pdo_stmt->execute(array_merge($columns_assoc, $where));
+        return $this->pdo_stmt->execute(array_merge($columns_assoc, $where));
     }
 
     /**
@@ -160,9 +161,22 @@ class DB
 
         $stmt = "delete from {$table} {$where_stmt}";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        return $pdo_stmt->execute($where);
+        return $this->pdo_stmt->execute($where);
+    }
+
+    /**
+     * @param string $table
+     * @param array $columns
+     * @param array $where
+     * @return array
+     */
+    public function row(string $table, array $columns = [], array $where = [])
+    {
+        $result = $this->select($table, $columns, $where);
+
+        return $result[0];
     }
 
     /**
@@ -172,11 +186,19 @@ class DB
      */
     public function query(string $stmt, array $params)
     {
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        $pdo_stmt->execute($params);
+        $this->pdo_stmt->execute($params);
 
-        return $pdo_stmt->fetchAll();
+        return $this->pdo_stmt->fetchAll();
+    }
+
+    /**
+     * @return array
+     */
+    public function errorInfo()
+    {
+        return $this->pdo_stmt->errorInfo();
     }
 
 
