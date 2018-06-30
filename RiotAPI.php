@@ -10,7 +10,7 @@
 
 namespace ProjectOrange;
 
-class RiotAPI
+abstract class RiotAPI
 {
 
     // TODO: Create const for each server
@@ -21,7 +21,6 @@ class RiotAPI
     const API_URL_STATIC_3 = 'https://{platform}.api.riotgames.com/lol/static-data/v3/';
     const API_URL_MATCH_3 = 'https://{platform}.api.riotgames.com/lol/match/v3/';
     const API_URL_LEAGUE_3 = 'https://{platform}.api.riotgames.com/lol/league/v3/';
-    const API_URL_SUMMONER_3 = 'https://{platform}.api.riotgames.com/lol/summoner/v3/';
 
     // Default asset location - modify as required
     const ICON_PATH = 'assets/images/champion_icons/';
@@ -54,6 +53,8 @@ class RiotAPI
 
     private $server;
 
+    protected $cache_column = 'last_updated';
+
     protected $db;
 
     public $response_code;
@@ -63,7 +64,7 @@ class RiotAPI
      * @param $server
      * @param DB $db
      */
-    protected function __construct(string $server, DB $db){
+    public function __construct(string $server, DB $db){
         $this->server = $server;
         $this->db = $db;
     }
@@ -117,13 +118,12 @@ class RiotAPI
     }
 
     /**
-     * @param string $class_link
      * @param string $method
      * @param string $value
      * @param array  $params
      * @return string
      */
-    protected function formatURL(string $class_link, string $method, string $value, $params = array()){
+    protected function formatURL(string $value, string $method = '', $params = array()){
         // URL should look like this - {https://}{$SERVER}{$CLASSLINK}{$METHODLINK}{$VALUE}?{$GETPARAMS}
 
         $params_str_arr = [];
@@ -131,11 +131,66 @@ class RiotAPI
             $params_str_arr[] = "{$key}={$val}";
         }
         $params_string = implode('&', $params_str_arr);
+
         if($params_string)
         {
             $params_string = "?{$params_string}";
         }
-        return "https://{$this->server}.{$class_link}{$method}{$value}{$params_string}";
+
+        return "https://{$this->server}.{$this->getClassLink()}{$method}{$value}{$params_string}";
+    }
+
+
+    protected abstract function getClassLink();
+
+    /**
+     * @param string $table
+     * @param array $params
+     * @param int $cache_time
+     * @return array|bool|int
+     */
+    protected function checkCache(string $table, array $params, int $cache_time)
+    {
+        $result = $this->db->row($table, [], $params);
+
+        if($result === [])
+        {
+            // Insert Cache
+            return false;
+        }
+
+        if(time() - ($result[$this->cache_column]/1000) > $cache_time)
+        {
+            // Update Cache
+            return 0;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param string $table
+     * @param array $params
+     * @return bool
+     */
+    protected function insertCache(string $table, array $params)
+    {
+        $params[$this->cache_column] = time();
+
+        return $this->db->insert($table, $params);
+    }
+
+    /**
+     * @param string $table
+     * @param array $params
+     * @param array $where
+     * @return bool
+     */
+    protected function updateCache(string $table, array $params, array $where)
+    {
+        $params[$this->cache_column] = time();
+
+        return $this->db->update($table, $params, $where);
     }
 
 
