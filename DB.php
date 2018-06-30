@@ -162,9 +162,21 @@ class DB
 
         $pdo_stmt = $this->pdo->prepare($stmt);
 
-        echo $pdo_stmt->queryString;
-
         return $pdo_stmt->execute($where);
+    }
+
+    /**
+     * @param string $stmt
+     * @param array $params
+     * @return array
+     */
+    public function query(string $stmt, array $params)
+    {
+        $pdo_stmt = $this->pdo->prepare($stmt);
+
+        $pdo_stmt->execute($params);
+
+        return $pdo_stmt->fetchAll();
     }
 
 
