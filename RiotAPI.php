@@ -49,7 +49,7 @@ abstract class RiotAPI
     const LONG_BUFFER       = 15;
 
     // API Key - modify as required
-    const API_KEY = '<API_KEY>';
+    protected $api_key = '<API_KEY>';
 
     private $server;
 
@@ -86,9 +86,7 @@ abstract class RiotAPI
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'X-Riot-Token: '. self::API_KEY
-        ));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-Riot-Token: '. $this->api_key]);
 
         $result = json_decode(curl_exec($ch), true);
 
@@ -243,6 +241,15 @@ abstract class RiotAPI
 
         return $path;
 
+    }
+
+    /**
+     * Mainly for development purposes
+     * @param string $api_key
+     */
+    public function setAPIKey(string $api_key)
+    {
+        $this->api_key = $api_key;
     }
 
 }
