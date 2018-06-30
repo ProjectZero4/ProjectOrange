@@ -49,7 +49,7 @@ abstract class RiotAPI
     const LONG_BUFFER       = 15;
 
     // API Key - modify as required
-    const API_KEY = 'RGAPI-99CF8F9C-C715-4A6E-81B8-8BE3C2BC84B4';
+    const API_KEY = '<API_KEY>';
 
     private $server;
 
