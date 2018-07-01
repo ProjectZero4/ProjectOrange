@@ -60,7 +60,7 @@ class DB
 
         foreach($where as $k => $v)
         {
-            $where_arr[] = "{$k} = :{$k}";
+            $where_arr[] = "`{$k}` = :{$k}";
         }
 
         $where_stmt .= implode(' and ', $where_arr);
@@ -72,7 +72,7 @@ class DB
 
         $this->pdo_stmt->execute($where);
 
-        $result = $this->pdo_stmt->fetchAll();
+        $result = $this->pdo_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         return $result;
     }
@@ -85,13 +85,24 @@ class DB
     public function insert(string $table, array $columns_assoc)
     {
 
-        $keys = implode(',', array_keys($columns_assoc));
+        $col_keys = array_keys($columns_assoc);
+
+        foreach($col_keys as $k => $v)
+        {
+            $col_keys[$k] = "`{$v}`";
+        }
+
+        $keys = implode(',', $col_keys);
 
         $key_holders = [];
 
         foreach($columns_assoc as $k => $v)
         {
             $key_holders[] = ":{$k}";
+            if(is_array($v))
+            {
+                $columns_assoc[$k] = json_encode($v);
+            }
         }
 
         $values = implode(',', $key_holders);
@@ -118,7 +129,11 @@ class DB
 
         foreach($columns_assoc as $k => $v)
         {
-            $col_arr[] = "{$k}=:{$k}";
+            $col_arr[] = "`{$k}`=:{$k}";
+            if(is_array($v))
+            {
+                $columns_assoc[$k] = json_encode($v);
+            }
         }
 
         $col_stmt = implode(',', $col_arr);
@@ -176,7 +191,7 @@ class DB
     {
         $result = $this->select($table, $columns, $where);
 
-        return $result[0];
+        return isset($result[0]) ? $result[0] : $result;
     }
 
     /**
@@ -190,7 +205,7 @@ class DB
 
         $this->pdo_stmt->execute($params);
 
-        return $this->pdo_stmt->fetchAll();
+        return $this->pdo_stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -203,6 +218,9 @@ class DB
 
 
 
-
+    public function queryString()
+    {
+        return $this->pdo_stmt->queryString;
+    }
 
 }

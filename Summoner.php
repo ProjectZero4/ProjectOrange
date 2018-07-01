@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by Josh.
- * Date: 27/03/2018
- * Time: 18:43
- * Last Update: 27/03/2018 - 18:43
- */
 
 namespace ProjectOrange;
 
@@ -14,7 +8,7 @@ class Summoner extends RiotAPI {
     /**
      * @var string
      */
-    private $class_link = "api.riotgames.com/lol/summoner/v3/summoners/";
+    protected $class_link = "api.riotgames.com/lol/summoner/v3/summoners/";
 
     /**
      * @var string
@@ -22,20 +16,10 @@ class Summoner extends RiotAPI {
     private $table = 'summoners';
 
     /**
-     * @return string
-     */
-    protected function getClassLink()
-    {
-        return $this->class_link;
-    }
-
-
-    /**
      * Returns Summoner's info via summonerId
      * @param $summoner_id
      * @return array
      */
-
     public function bySummonerId($summoner_id){
 
         $cache = $this->checkCache($this->table, ['id' => $summoner_id], self::FULL_HOUR);
@@ -110,20 +94,6 @@ class Summoner extends RiotAPI {
         $this->insertUpdateCache($cache, $result, ['accountId' => $account_id]);
 
         return $this->db->row($this->table, [], ['accountId' => $account_id]);
-    }
-
-    /**
-     * @param bool|int $cache
-     * @param array $result
-     * @param array $where
-     */
-    private function insertUpdateCache($cache, array $result, array $where)
-    {
-        if($cache === false){
-            $this->insertCache($this->table, $result);
-        }else{
-            $this->updateCache($this->table, $result, $where);
-        }
     }
 
     /**
