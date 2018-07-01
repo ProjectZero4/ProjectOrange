@@ -45,7 +45,7 @@ abstract class CacheHandle
      * @param int $cache_time
      * @return array|bool|int
      */
-    protected function checkCache(string $table, array $params, int $cache_time)
+    protected function checkCache(string $table, array $params, int $cache_time = 0)
     {
         $result = $this->db->row($table, [], $params);
 

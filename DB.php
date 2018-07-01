@@ -45,9 +45,10 @@ class DB
      * @param string $table
      * @param array $columns
      * @param array $where
+     * @param string $extra
      * @return array
      */
-    public function select(string $table, array $columns = [], array $where = [])
+    public function select(string $table, array $columns = [], array $where = [], string $extra = '')
     {
 
         // Defaults to all columns if none is specified
@@ -66,7 +67,7 @@ class DB
         $where_stmt .= implode(' and ', $where_arr);
 
         // PDO statement
-        $stmt = "select {$col_stmt} from {$table} {$where_stmt};";
+        $stmt = "select {$col_stmt} from {$table} {$where_stmt} {$extra};";
 
         $this->pdo_stmt = $this->pdo->prepare($stmt);
 
@@ -185,11 +186,12 @@ class DB
      * @param string $table
      * @param array $columns
      * @param array $where
+     * @param string $extra
      * @return array
      */
-    public function row(string $table, array $columns = [], array $where = [])
+    public function row(string $table, array $columns = [], array $where = [], string $extra = '')
     {
-        $result = $this->select($table, $columns, $where);
+        $result = $this->select($table, $columns, $where, $extra);
 
         return isset($result[0]) ? $result[0] : $result;
     }
