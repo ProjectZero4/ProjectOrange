@@ -1,16 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Joshu
- * Date: 18/03/2018
- * Time: 10:34
- */
 
 // TODO: Get Profile Icons and create a method for getting the URL
 
 namespace ProjectOrange;
 
-class RiotAPI
+abstract class RiotAPI extends CacheHandle
 {
 
     // TODO: Create const for each server
@@ -21,7 +15,6 @@ class RiotAPI
     const API_URL_STATIC_3 = 'https://{platform}.api.riotgames.com/lol/static-data/v3/';
     const API_URL_MATCH_3 = 'https://{platform}.api.riotgames.com/lol/match/v3/';
     const API_URL_LEAGUE_3 = 'https://{platform}.api.riotgames.com/lol/league/v3/';
-    const API_URL_SUMMONER_3 = 'https://{platform}.api.riotgames.com/lol/summoner/v3/';
 
     // Default asset location - modify as required
     const ICON_PATH = 'assets/images/champion_icons/';
@@ -50,33 +43,44 @@ class RiotAPI
     const LONG_BUFFER       = 15;
 
     // API Key - modify as required
-    const API_KEY = 'RGAPI-99CF8F9C-C715-4A6E-81B8-8BE3C2BC84B4';
+    protected $api_key = '<API_KEY>';
 
     private $server;
 
+    protected $cache_column = 'last_updated';
+
     protected $db;
 
+    protected $class_link;
+
+    protected $rate_limit;
+
     public $response_code;
+
+    protected $table;
 
     /**
      * RiotAPI constructor.
      * @param $server
      * @param DB $db
+     * @param RateLimit $rate_limit
      */
-    protected function __construct(string $server, DB $db){
+    public function __construct(string $server, DB $db, RateLimit $rate_limit = null){
+
+        parent::__construct($db);
+
         $this->server = $server;
-        $this->db = $db;
+        $this->rate_limit = $rate_limit;
     }
 
     /**
      * @param string $url
-     * @param RateLimit|null $rateLimit
-     * @return array|mixed
+     * @return array|false
      */
-    protected function queryRiot(string $url, RateLimit $rateLimit = null){
+    protected function queryRiot(string $url){
 
-        if($rateLimit instanceof RateLimit){
-            $rateLimit->run();
+        if($this->rate_limit instanceof RateLimit){
+            $this->rate_limit->run();
         }
 
         // Call the API and return the result
@@ -85,9 +89,7 @@ class RiotAPI
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'X-Riot-Token: '. self::API_KEY
-        ));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-Riot-Token: '. $this->api_key]);
 
         $result = json_decode(curl_exec($ch), true);
 
@@ -117,13 +119,12 @@ class RiotAPI
     }
 
     /**
-     * @param string $class_link
      * @param string $method
      * @param string $value
      * @param array  $params
      * @return string
      */
-    protected function formatURL(string $class_link, string $method, string $value, $params = array()){
+    protected function formatURL(string $value, string $method = '', $params = array()){
         // URL should look like this - {https://}{$SERVER}{$CLASSLINK}{$METHODLINK}{$VALUE}?{$GETPARAMS}
 
         $params_str_arr = [];
@@ -131,11 +132,22 @@ class RiotAPI
             $params_str_arr[] = "{$key}={$val}";
         }
         $params_string = implode('&', $params_str_arr);
+
         if($params_string)
         {
             $params_string = "?{$params_string}";
         }
-        return "https://{$this->server}.{$class_link}{$method}{$value}{$params_string}";
+
+        return "https://{$this->server}.{$this->getClassLink()}{$method}{$value}{$params_string}";
+    }
+
+
+    /**
+     * @return string
+     */
+    protected function getClassLink()
+    {
+        return $this->class_link;
     }
 
 
@@ -145,7 +157,7 @@ class RiotAPI
      * @return array
      */
     public static function getChampionData(DB $db, $id){
-        $stmt = "select * from champion_data where champion_id = :champion_id";
+        $stmt = "select * from champion_data where `key` = :champion_id";
         return $db->query($stmt, ['champion_id' => $id]);
     }
 
@@ -190,4 +202,12 @@ class RiotAPI
 
     }
 
+    /**
+     * Mainly for development purposes
+     * @param string $api_key
+     */
+    public function setAPIKey(string $api_key)
+    {
+        $this->api_key = $api_key;
+    }
 }

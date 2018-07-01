@@ -9,6 +9,7 @@
 namespace ProjectOrange;
 
 use PDO;
+use PDOStatement;
 
 class DB
 {
@@ -19,6 +20,11 @@ class DB
     private $dsn, $user, $pass, $pdo;
 
     /**
+     * @var PDOStatement
+     */
+    private $pdo_stmt;
+
+    /**
      * DB constructor.
      * @param $database
      * @param $user
@@ -26,7 +32,7 @@ class DB
      * @param string $driver
      * @param string $password
      */
-    public function __construct($database, $user = 'user_data_user', $host = 'localhost', $driver = 'mysql', $password = 'KxWAkz2t3vA88iCX')
+    public function __construct($database = 'database', $user = 'db_user', $host = 'localhost', $driver = 'mysql', $password = 'password')
     {
         $this->dsn = "{$driver}:dbname={$database};host={$host}";
         $this->user = $user;
@@ -54,7 +60,7 @@ class DB
 
         foreach($where as $k => $v)
         {
-            $where_arr[] = "{$k} = :{$k}";
+            $where_arr[] = "`{$k}` = :{$k}";
         }
 
         $where_stmt .= implode(' and ', $where_arr);
@@ -62,11 +68,11 @@ class DB
         // PDO statement
         $stmt = "select {$col_stmt} from {$table} {$where_stmt};";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        $pdo_stmt->execute($where);
+        $this->pdo_stmt->execute($where);
 
-        $result = $pdo_stmt->fetchAll();
+        $result = $this->pdo_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         return $result;
     }
@@ -79,22 +85,33 @@ class DB
     public function insert(string $table, array $columns_assoc)
     {
 
-        $keys = implode(',', array_keys($columns_assoc));
+        $col_keys = array_keys($columns_assoc);
+
+        foreach($col_keys as $k => $v)
+        {
+            $col_keys[$k] = "`{$v}`";
+        }
+
+        $keys = implode(',', $col_keys);
 
         $key_holders = [];
 
         foreach($columns_assoc as $k => $v)
         {
             $key_holders[] = ":{$k}";
+            if(is_array($v))
+            {
+                $columns_assoc[$k] = json_encode($v);
+            }
         }
 
         $values = implode(',', $key_holders);
 
         $stmt = "insert into {$table} ({$keys}) values ($values)";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        return $pdo_stmt->execute($columns_assoc);
+        return $this->pdo_stmt->execute($columns_assoc);
     }
 
     /**
@@ -112,12 +129,11 @@ class DB
 
         foreach($columns_assoc as $k => $v)
         {
-            if(isset($where[$k]))
+            $col_arr[] = "`{$k}`=:{$k}";
+            if(is_array($v))
             {
-                throw new \BadMethodCallException('You cannot use ProjectOrange\DB::update to mass update the table!');
+                $columns_assoc[$k] = json_encode($v);
             }
-
-            $col_arr[] = "{$k}=:{$k}";
         }
 
         $col_stmt = implode(',', $col_arr);
@@ -134,9 +150,9 @@ class DB
 
         $stmt = "update {$table} set {$col_stmt} {$where_stmt}";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        return $pdo_stmt->execute(array_merge($columns_assoc, $where));
+        return $this->pdo_stmt->execute(array_merge($columns_assoc, $where));
     }
 
     /**
@@ -160,9 +176,22 @@ class DB
 
         $stmt = "delete from {$table} {$where_stmt}";
 
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        return $pdo_stmt->execute($where);
+        return $this->pdo_stmt->execute($where);
+    }
+
+    /**
+     * @param string $table
+     * @param array $columns
+     * @param array $where
+     * @return array
+     */
+    public function row(string $table, array $columns = [], array $where = [])
+    {
+        $result = $this->select($table, $columns, $where);
+
+        return isset($result[0]) ? $result[0] : $result;
     }
 
     /**
@@ -172,15 +201,26 @@ class DB
      */
     public function query(string $stmt, array $params)
     {
-        $pdo_stmt = $this->pdo->prepare($stmt);
+        $this->pdo_stmt = $this->pdo->prepare($stmt);
 
-        $pdo_stmt->execute($params);
+        $this->pdo_stmt->execute($params);
 
-        return $pdo_stmt->fetchAll();
+        return $this->pdo_stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * @return array
+     */
+    public function errorInfo()
+    {
+        return $this->pdo_stmt->errorInfo();
     }
 
 
 
-
+    public function queryString()
+    {
+        return $this->pdo_stmt->queryString;
+    }
 
 }
