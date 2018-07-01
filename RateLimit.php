@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by Josh.
- * Date: 30/06/2018
- * Time: 20:12
- * Last Update: 30/06/2018 - 20:12
- */
 
 namespace ProjectOrange;
 

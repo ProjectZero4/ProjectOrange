@@ -1,16 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Joshu
- * Date: 18/03/2018
- * Time: 10:34
- */
 
 // TODO: Get Profile Icons and create a method for getting the URL
 
 namespace ProjectOrange;
 
-abstract class RiotAPI
+abstract class RiotAPI extends CacheHandle
 {
 
     // TODO: Create const for each server
@@ -57,27 +51,36 @@ abstract class RiotAPI
 
     protected $db;
 
+    protected $class_link;
+
+    protected $rate_limit;
+
     public $response_code;
+
+    protected $table;
 
     /**
      * RiotAPI constructor.
      * @param $server
      * @param DB $db
+     * @param RateLimit $rate_limit
      */
-    public function __construct(string $server, DB $db){
+    public function __construct(string $server, DB $db, RateLimit $rate_limit = null){
+
+        parent::__construct($db);
+
         $this->server = $server;
-        $this->db = $db;
+        $this->rate_limit = $rate_limit;
     }
 
     /**
      * @param string $url
-     * @param RateLimit|null $rateLimit
-     * @return array|mixed
+     * @return array|false
      */
-    protected function queryRiot(string $url, RateLimit $rateLimit = null){
+    protected function queryRiot(string $url){
 
-        if($rateLimit instanceof RateLimit){
-            $rateLimit->run();
+        if($this->rate_limit instanceof RateLimit){
+            $this->rate_limit->run();
         }
 
         // Call the API and return the result
@@ -139,56 +142,12 @@ abstract class RiotAPI
     }
 
 
-    protected abstract function getClassLink();
-
     /**
-     * @param string $table
-     * @param array $params
-     * @param int $cache_time
-     * @return array|bool|int
+     * @return string
      */
-    protected function checkCache(string $table, array $params, int $cache_time)
+    protected function getClassLink()
     {
-        $result = $this->db->row($table, [], $params);
-
-        if($result === [])
-        {
-            // Insert Cache
-            return false;
-        }
-
-        if(time() - ($result[$this->cache_column]/1000) > $cache_time)
-        {
-            // Update Cache
-            return 0;
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param string $table
-     * @param array $params
-     * @return bool
-     */
-    protected function insertCache(string $table, array $params)
-    {
-        $params[$this->cache_column] = time();
-
-        return $this->db->insert($table, $params);
-    }
-
-    /**
-     * @param string $table
-     * @param array $params
-     * @param array $where
-     * @return bool
-     */
-    protected function updateCache(string $table, array $params, array $where)
-    {
-        $params[$this->cache_column] = time();
-
-        return $this->db->update($table, $params, $where);
+        return $this->class_link;
     }
 
 
@@ -198,7 +157,7 @@ abstract class RiotAPI
      * @return array
      */
     public static function getChampionData(DB $db, $id){
-        $stmt = "select * from champion_data where champion_id = :champion_id";
+        $stmt = "select * from champion_data where `key` = :champion_id";
         return $db->query($stmt, ['champion_id' => $id]);
     }
 
@@ -251,5 +210,4 @@ abstract class RiotAPI
     {
         $this->api_key = $api_key;
     }
-
 }
