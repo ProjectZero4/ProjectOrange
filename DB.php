@@ -59,9 +59,30 @@ class DB
 
         $where_arr = [];
 
-        foreach($where as $k => $v)
-        {
-            $where_arr[] = "`{$k}` = :{$k}";
+        foreach ($where as $k => $v) {
+
+            if (!is_array($v)) {
+                $where_arr[] = "`{$k}` = :{$k}";
+                continue;
+            }
+
+            $arr = array();
+
+            $valArr = array();
+
+            foreach($v as $key => $val)
+            {
+                $arr[$k . $key] = ":{$k}{$key}";
+
+                $valArr[$k . $key] = $val;
+            }
+
+            unset($where[$k]);
+
+            $where = array_merge($where, $valArr);
+
+
+            $where_arr[] = "`{$k}` in (".implode(',', $arr).")";
         }
 
         $where_stmt .= implode(' and ', $where_arr);
@@ -88,8 +109,7 @@ class DB
 
         $col_keys = array_keys($columns_assoc);
 
-        foreach($col_keys as $k => $v)
-        {
+        foreach ($col_keys as $k => $v) {
             $col_keys[$k] = "`{$v}`";
         }
 
@@ -97,11 +117,9 @@ class DB
 
         $key_holders = [];
 
-        foreach($columns_assoc as $k => $v)
-        {
+        foreach ($columns_assoc as $k => $v) {
             $key_holders[] = ":{$k}";
-            if(is_array($v))
-            {
+            if (is_array($v)) {
                 $columns_assoc[$k] = json_encode($v);
             }
         }
@@ -126,13 +144,11 @@ class DB
 
         $where_stmt = empty($where) ? "" : "where ";
 
-        $col_arr= [];
+        $col_arr = [];
 
-        foreach($columns_assoc as $k => $v)
-        {
+        foreach ($columns_assoc as $k => $v) {
             $col_arr[] = "`{$k}`=:{$k}";
-            if(is_array($v))
-            {
+            if (is_array($v)) {
                 $columns_assoc[$k] = json_encode($v);
             }
         }
@@ -142,8 +158,7 @@ class DB
 
         $where_arr = [];
 
-        foreach($where as $k => $v)
-        {
+        foreach ($where as $k => $v) {
             $where_arr[] = "{$k}=:{$k}";
         }
 
@@ -168,8 +183,7 @@ class DB
 
         $where_arr = [];
 
-        foreach($where as $k => $v)
-        {
+        foreach ($where as $k => $v) {
             $where_arr[] = "{$k} = :{$k}";
         }
 
@@ -217,7 +231,6 @@ class DB
     {
         return $this->pdo_stmt->errorInfo();
     }
-
 
 
     public function queryString()

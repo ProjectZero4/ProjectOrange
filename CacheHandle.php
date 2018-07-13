@@ -55,7 +55,7 @@ abstract class CacheHandle
             return false;
         }
 
-        if(time() - ($result[$this->cache_column]/1000) > $cache_time)
+        if($cache_time > 0 && time() - ($result[$this->cache_column]/1000) > $cache_time)
         {
             // Update Cache
             return 0;

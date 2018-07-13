@@ -13,7 +13,7 @@ class Summoner extends RiotAPI {
     /**
      * @var string
      */
-    private $table = 'summoners';
+    protected $table = 'summoners';
 
     /**
      * Returns Summoner's info via summonerId

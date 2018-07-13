@@ -32,7 +32,7 @@ class Match extends RiotAPI {
 
         $table = 'matches';
 
-        $cache = $this->checkCache($table, ['gameId' => $match_id]);
+        $cache = $this->checkCache($table, ['gameId' => $match_id], -1);
 
         if($cache !== false){
             return $cache;
@@ -50,8 +50,6 @@ class Match extends RiotAPI {
 
         $this->insertCache($table, $result);
 
-        var_dump($this->db->errorInfo());
-
         return $this->db->row($table, [], ['gameId' => $match_id]);
     }
 
@@ -66,22 +64,24 @@ class Match extends RiotAPI {
 
         $this->table = 'match_lists';
 
-        if($recent === 1){
-            $value  = 'recent';
-        }else {
-            $value  = "";
+        if($recent === 1) {
+            $params['beginIndex'] = 0;
+            $params['endIndex'] = 20;
         }
 
-        $url = $this->formatURL($value, "matchlists/by-account/{$accountId}/", $params);
+        $url = $this->formatURL('', "matchlists/by-account/{$accountId}/", $params);
 
         $result = $this->queryRiot($url);
+        if(!isset($result['matches'])) {
+            var_dump($url);
+        }
 
-        foreach($result['matches'] as $match){
+        foreach($result['matches'] as $match) {
             $cache = $this->db->row($this->table, [], ['gameId' => $match['gameId'], 'accountId' => $accountId]);
 
             $match['accountId'] = $accountId;
 
-            if($cache === false){
+            if ($cache === []) {
                 $this->insertCache($this->table, $match);
             }
         }
@@ -115,9 +115,7 @@ class Match extends RiotAPI {
 	        }
         }
 
-        echo '<pre>' . print_r($result, 1) . '</pre>';
-
-        return $this->db->row($this->table, [], $where, $extra);
+        return $this->db->select($this->table, [], $where, $extra);
 
     }
 
