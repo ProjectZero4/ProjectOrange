@@ -45,7 +45,7 @@ abstract class CacheHandle
      * @param int $cache_time
      * @return array|bool|int
      */
-    protected function checkCache(string $table, array $params, int $cache_time)
+    protected function checkCache(string $table, array $params, int $cache_time = 0)
     {
         $result = $this->db->row($table, [], $params);
 
@@ -55,7 +55,7 @@ abstract class CacheHandle
             return false;
         }
 
-        if(time() - ($result[$this->cache_column]/1000) > $cache_time)
+        if($cache_time > 0 && time() - ($result[$this->cache_column]/1000) > $cache_time)
         {
             // Update Cache
             return 0;
