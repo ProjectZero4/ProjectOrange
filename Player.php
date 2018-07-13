@@ -187,6 +187,8 @@ class Player
 
             $playerData['gameId'] = $match['gameId'];
             $playerData['summonerId'] = $this->getId();
+            $playerData['gameCreation'] = $match['gameCreation'];
+            $playerData['gameDuration'] = $match['gameDuration'];
             $playerData['last_updated'] = time();
 
 
