@@ -116,6 +116,10 @@ class Player
         foreach ($data as $k => $v) {
             $this->data[$k] = $v;
         }
+
+        $this->data['ranked'][0] = $this->league->ranked($this->getId(), 0);
+        $this->data['ranked'][1] = $this->league->ranked($this->getId(), 1);
+        $this->data['ranked'][2] = $this->league->ranked($this->getId(), 2);
     }
 
     /**
@@ -152,7 +156,9 @@ class Player
         $this->league->setAPIKey($apiKey);
     }
 
-
+    /**
+     * @param array $matchHistory
+     */
     public function processMatchHistory(array $matchHistory = array())
     {
         if (empty($matchHistory)) {
@@ -200,7 +206,9 @@ class Player
 
     }
 
-
+    /**
+     * @return array
+     */
     public function getPlayerData()
     {
         $gameIds = array();
@@ -213,5 +221,22 @@ class Player
         return $this->db->select(self::MATCHES_TABLE, [], ['summonerId' => $this->getId(), 'gameId' => $gameIds]);
     }
 
+    /**
+     * @param int $queue
+     * @return string
+     */
+    public function getRank(int $queue = 0)
+    {
+        return $this->data['ranked'][$queue]['tier'];
+    }
+
+    /**
+     * @param int $queue
+     * @return string
+     */
+    public function getDivision(int $queue)
+    {
+        return $this->data['ranked'][$queue]['rank'];
+    }
 
 }
